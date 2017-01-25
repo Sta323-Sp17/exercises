@@ -1,0 +1,81 @@
+---
+title: "Exercises 1-25"
+author: "Colin Rundel"
+date: "1/25/2017"
+output: html_document
+---
+
+
+### Exercise 1
+
+#### Part 1
+
+```{r}
+typeof( c(1, NA+1L, "C") )  # double, int, character => character
+typeof( c(1L / 0, NA)    )  # double (Inf), logical => double
+typeof( c(1:3, 5)        )  # int, int, int, double => double
+typeof( c(3L, NaN+1L)    )  # int, double => double
+typeof( c(NA, TRUE)      )  # log, log => log
+```
+
+#### Part 2
+
+character > double > integer > logical
+
+
+### Exercise 2
+
+```{r}
+json = '{
+  "firstName": "John",
+  "lastName": "Smith",
+  "age": 25,
+  "address": 
+  {
+    "streetAddress": "21 2nd Street",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": 10021
+  },
+  "phoneNumber": 
+  [
+    {
+      "type": "home",
+      "number": "212 555-1239"
+    },
+    {
+      "type": "fax",
+      "number": "646 555-4567"
+    }
+  ]
+}'
+
+json_list = list(
+  firstName = "John",
+  lastName = "Smith",
+  age = 25L,
+  address = list(
+    streetAddress = "21 2nd Street",
+    city = "New York",
+    state = "NY",
+    postalCode = 10021L
+  ),
+  phoneNumber = list(
+    list(  
+      type = "home",
+      number = "212 555-1239"
+    ), 
+    list(
+      type = "fax",
+      number = "646 555-4567"
+    )
+  )
+)
+str(json_list)
+
+library(jsonlite)
+str( fromJSON(json, simplifyVector = FALSE) )
+```
+
+
+### Exercise 3
