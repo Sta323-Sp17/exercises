@@ -1,5 +1,5 @@
 ---
-title: "Exercises 1-25"
+title: "In class exercises"
 author: "Colin Rundel"
 date: "1/25/2017"
 output: html_document
