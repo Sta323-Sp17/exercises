@@ -1,0 +1,23 @@
+---
+title: "In class demo"
+author: "Colin Rundel"
+date: "2/06/2017"
+output: html_document
+---
+
+```{r setup include=FALSE}
+library(devtools)
+library(purrr)
+
+if (! "repurrrsive" %in% row.names(installed.packages()))
+  install_github("jennybc/repurrrsive")
+library(repurrrsive)
+```
+
+## Live Demo - An api of ice and fire 
+
+Data from the repurrrsive package collected from https://anapioficeandfire.com/
+
+```{r}
+got_chars
+```
