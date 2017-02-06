@@ -12,12 +12,80 @@ library(purrr)
 if (! "repurrrsive" %in% row.names(installed.packages()))
   install_github("jennybc/repurrrsive")
 library(repurrrsive)
+library(dplyr)
 ```
+
+## lapply vs sapply + do.call
+
+
+
+# Option 1
+
+```{r}
+l = sapply(1:8, function(x) list(LETTERS[x], x, x^2, x^3))
+l %>% t() %>% as.data.frame()
+
+# Option 2
+l = lapply(1:8, function(x) list(LETTERS[x], x, x^2, x^3))
+
+rbind(l[[1]], l[[2]], l[[3]], l[[4]])
+
+do.call(rbind, l) %>% str()
+
+
+# Option 3
+
+l = lapply(1:8, function(x) data.frame(LETTERS[x], x, x^2, x^3))
+do.call(rbind, l)
+```
+
 
 ## Live Demo - An api of ice and fire 
 
 Data from the repurrrsive package collected from https://anapioficeandfire.com/
 
 ```{r}
-got_chars
+df = got_chars %>% 
+  map_chr("name") %>% 
+  data_frame() %>%
+  setNames("Name")
+
+df$gender = map_chr(got_chars, "gender")
+df$aliases = map(got_chars, "aliases")
+
+
+df$aliases[1]
+
+names(got_chars[[1]])
 ```
+
+
+```{r}
+colnames = map(got_chars, names) %>% unlist() %>% unique()
+x = map(colnames, function(col) map(got_chars, col))
+
+df = do.call(cbind, x) %>% as.data.frame() %>% setNames(colnames)
+df$url = as.character(df$url)
+df = df %>% mutate(gender = unlist(gender))
+```
+
+```{r}
+l = list()
+for(i in seq_along(got_chars))
+{
+  sub = map_lgl(got_chars[[i]], ~ length(.) == 1)
+  df = data.frame(got_chars[[i]][sub], stringsAsFactors = FALSE)
+  
+  colnames = names(got_chars[[i]])
+  for(col in colnames[!sub])
+  {
+    df[[col]] = got_chars[[i]][col]
+  }
+  
+  l[[i]] = df
+}
+
+df_full = do.call(rbind, l)
+View(df_full)
+```
+
