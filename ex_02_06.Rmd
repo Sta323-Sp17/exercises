@@ -56,6 +56,8 @@ df$aliases = map(got_chars, "aliases")
 
 df$aliases[1]
 
+df
+
 names(got_chars[[1]])
 ```
 
