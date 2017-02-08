@@ -1,0 +1,41 @@
+---
+title: "In class exercises"
+author: "Colin Rundel"
+date: "2/08/2017"
+output: html_document
+---
+
+```{r setup include=FALSE}
+library(dplyr)
+library(ggplot2)
+
+movies = read.csv("http://www.stat.duke.edu/~cr173/Sta323_Sp17/data/movies/movies.csv", 
+                  stringsAsFactors = FALSE) %>% tbl_df()
+movies
+```
+
+## Exercise 1
+
+```{r}
+ggplot(movies, aes(x = imdb_num_votes, y = imdb_rating, colour=audience_rating)) +
+  geom_point(alpha=0.3) +
+  facet_wrap(~mpaa_rating) +
+  theme_bw() +
+  labs(
+    title = "IMDB scores by IMDB number of votes, by MPAA rating", 
+    x="IMDB Number of Votes",
+    y="IMDB Rating",
+    colour="Audience Rating"
+  )
+```
+
+## Exercise 2
+
+```{r}
+ggplot(movies, aes(x = audience_score, y = critics_score)) +
+  geom_point(aes(colour=best_pic_nom)) +
+  facet_wrap(~mpaa_rating) +
+  theme_bw() + 
+  geom_smooth(method="lm", se=FALSE, fullrange=TRUE, color="black", size=0.3) +
+  geom_abline(slope=1, intercept=0, color="grey", size=0.3)
+```
