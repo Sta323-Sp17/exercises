@@ -1,0 +1,60 @@
+---
+title: "In class exercises"
+author: "Colin Rundel"
+date: "2/20/2017"
+output: html_document
+---
+
+```{r setup include=FALSE}
+library(magrittr)
+library(rvest)
+library(tibble)
+library(stringr)
+```
+
+## Exercise - Step 1
+
+```{r}
+url = "https://www.rottentomatoes.com/"
+
+page = read_html(url)
+
+movies = page %>%
+  html_nodes("#Top-Box-Office .middle_col a")
+
+data_frame(
+  name = movies %>% html_text(),
+  url = movies %>% html_attr("href") %>% paste0(url, .),
+  gross = page %>% 
+    html_nodes("#Top-Box-Office .right a") %>% 
+    html_text() %>% 
+    str_replace_all("\n","") %>% 
+    str_replace_all(" ","") %>%
+    str_replace_all("\\$","") %>%
+    str_replace_all("M","") %>%
+    as.numeric(),
+  tomato_meter = page %>% 
+    html_nodes("#Top-Box-Office .tMeterScore") %>% 
+    html_text() %>% 
+    str_replace("%","") %>%
+    as.numeric() %>%
+    {. / 100},
+  freshness = page %>% 
+    html_nodes("#Top-Box-Office .tiny") %>% 
+    html_attr("class") %>% 
+    str_replace("icon tiny ","") %>%
+    str_replace("_", " ")
+)
+
+
+# Alternative approach
+
+page %>% html_nodes("#Top-Box-Office") %>% html_table() %>% str()
+```
+
+
+## Exercise - Step 2
+
+```{r}
+
+```
