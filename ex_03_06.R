@@ -54,6 +54,20 @@ shinyApp(
         {
           ggplot(movies, aes_string(x=input$var_x, y=input$var_y)) +
             geom_point()
+        } 
+        else if (!is.numeric(movies[[input$var_x]]) & is.numeric(movies[[input$var_y]]))
+        {
+          ggplot(movies, aes_string(x=input$var_x, y=input$var_y)) +
+            geom_boxplot()
+        }
+        else if (is.numeric(movies[[input$var_x]]) & !is.numeric(movies[[input$var_y]]))
+        {
+          ggplot(movies, aes_string(y=input$var_x, x=input$var_y)) +
+            geom_boxplot() + 
+            coord_flip()
+        } else {
+          ggplot(movies, aes_string(x=input$var_x, fill=input$var_y)) +
+            geom_bar()
         }
       }
     })
