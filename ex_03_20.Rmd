@@ -1,0 +1,95 @@
+## Exercise 1
+
+Earlier we mentioned that growing a vector as you collect results is bad, just how bad is it? Benchmark the following three functions and compare their performance.
+
+```{r}
+library(rbenchmark)
+library(microbenchmark)
+
+good = function()
+{
+    res = rep(NA, 1e4)
+    for(i in seq_along(res))
+    {
+        res[i] = sqrt(i)
+    }
+}
+bad = function()
+{
+    res = numeric()
+    for(i in 1:1e4)
+    {
+        res = c(res,sqrt(i))
+    }
+}
+best = function()
+{
+    sqrt(1:1e4)
+}
+
+mb = microbenchmark(
+  bad(),
+  good(),
+  best(),
+  times = 100
+)
+
+plot(mb)
+
+
+rb = benchmark(
+  bad(),
+  good(),
+  best(),
+  replications = 20,
+  order = "relative"
+)
+
+rb
+```
+
+## Exercise 2
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+library(doMC)
+library(foreach)
+
+registerDoMC(8)
+
+
+set.seed(3212016)
+d = data.frame(x = 1:120) %>%
+    mutate(y = sin(2*pi*x/120) + runif(length(x),-1,1))
+
+l = loess(y ~ x, data=d)
+d$pred_y = predict(l)
+d$pred_y_se = predict(l,se=TRUE)$se.fit
+
+
+n_rep = 10000
+res = matrix(NA, ncol=n_rep, nrow=nrow(d))
+
+#for(i in 1:ncol(res))
+res = foreach(i = 1:ncol(res), .combine = "cbind") %dopar%
+{ 
+  bootstrap_samp = d %>% select(x,y) %>% sample_n(nrow(d), replace=TRUE)
+  predict(loess(y ~ x, data=bootstrap_samp), newdata=d)
+}
+
+# Calculate the 95% bootstrap prediction interval
+d$bs_low = apply(res,1,quantile,probs=c(0.025), na.rm=TRUE)
+d$bs_up  = apply(res,1,quantile,probs=c(0.975), na.rm=TRUE)
+
+ggplot(d, aes(x,y)) +
+  geom_point() +
+  geom_line(aes(y=pred_y)) +
+  geom_line(aes(y=pred_y + 1.96 * pred_y_se), color="red") +
+  geom_line(aes(y=pred_y - 1.96 * pred_y_se), color="red") +
+  geom_line(aes(y=bs_low), color="blue") +
+  geom_line(aes(y=bs_up), color="blue")
+
+
+```
