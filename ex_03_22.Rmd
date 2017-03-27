@@ -1,0 +1,76 @@
+
+## Setup / Cleaning
+
+```{r setup}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+```
+
+```{r}
+#nyc = read_csv("/data/nyc_parking/NYParkingViolations.csv") %>%
+#  setNames(make.names(names(.))) %>%
+#  select(Registration.State:Issuing.Agency, 
+#       Violation.Location, Violation.Precinct, Violation.Time,
+#       House.Number:Intersecting.Street, Vehicle.Color) %>%
+#  mutate(Issue.Date = mdy(Issue.Date)) %>% 
+#  mutate(Issue.Day = day(Issue.Date),
+#         Issue.Month = month(Issue.Date),
+#         Issue.Year = year(Issue.Date),
+#         Issue.WDay = wday(Issue.Date, label=TRUE)) %>%
+#  filter(Issue.Year %in% 2013:2014)
+
+load("/data/nyc_parking/NYParkingViolations.Rdata")
+```
+
+## Date plot
+
+```{r}
+nyc %>% 
+  group_by(Issue.Date) %>% 
+  summarize(n=n()) %>%
+  ggplot(aes(x=Issue.Date, y=n)) + geom_line() + xlim(mdy("7/1/2013"), mdy("6/30/2014"))
+```
+
+
+## Exercise 1a
+
+```{r}
+res = nyc %>% 
+  filter(Issue.Date >= mdy("8/1/2013"), Issue.Date < mdy("7/1/2014")) %>%
+  group_by(Issue.Date) %>% 
+  summarize(n=n()) %>%
+  ungroup() %>%
+  filter(n == min(n) | n == max(n))  
+```
+
+
+## Exercise 1b
+
+```{r}
+nyc %>% 
+  filter(Issue.Date >= mdy("8/1/2013"), Issue.Date < mdy("7/1/2014")) %>%
+  group_by(Issue.WDay) %>% 
+  summarize(n=n()) %>%
+  ggplot(aes(x=Issue.WDay, y=n)) + geom_point()
+```
+
+## Exercise 1c
+
+
+## Exercise 1d
+
+How many different colors of cars were ticketed?
+
+```{r}
+nyc$Vehicle.Color %>% table() %>% sort(decreasing = TRUE)
+```
+
+
+
+## Exercise 2
+
+```{r}
+fines = read_csv("/data/nyc_parking/fine_definition.csv")
+```
