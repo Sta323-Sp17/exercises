@@ -1,0 +1,156 @@
+---
+title: "SparklyR"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+spark_home = "/data/spark/spark-2.0.2-bin-hadoop2.7/"
+Sys.setenv(SPARK_HOME=spark_home)
+
+library(sparklyr)
+library(dplyr)
+library(ggplot2)
+```
+
+## Spark Context
+
+```{r}
+sc = spark_connect(master = "local[4]", version="2.0.2")
+```
+
+
+## Iris Example
+
+```{r}
+sp_iris = copy_to(sc, iris, "iris")
+
+sp_iris %>% 
+  group_by(Species) %>%
+  summarize(
+    avg_sepal_length = mean(Sepal_Length),
+    avg_sepal_width = mean(Sepal_Width)
+  ) %>%
+  collect()
+
+iris %>% 
+  group_by(Species) %>%
+  summarize(
+    avg_sepal_length = mean(Sepal.Length),
+    avg_sepal_width = mean(Sepal.Width)
+  )
+```
+
+## NYC Taxi Example
+
+
+### Reading and Simple dplyr
+
+```{r}
+green = spark_read_csv(sc, "green", "/data/nyc-taxi-data/data/green_tripdata_2016-06.csv")
+
+library(stringr)
+
+green = green %>% 
+  setNames(
+    colnames(green) %>%
+      tolower() %>%
+      str_replace("[tTlL]pep_", "")
+    )
+
+#green %>%
+#  mutate(store_and_fwd_flag = str_replace(store_and_fwd_flag, "N", "?")) %>%
+#  select(store_and_fwd_flag) %>%
+#  explain()
+
+green_samp = green %>% 
+  select(pickup_longitude, pickup_latitude, 
+         dropoff_longitude, dropoff_latitude) %>%
+  filter(pickup_longitude < -60, pickup_latitude > 40,
+         dropoff_longitude < -60, dropoff_latitude > 40) %>%
+  sample_n(1e5) %>%
+  collect()
+
+
+library(gridExtra)
+
+grid.arrange(
+  ggplot(green_samp, aes(x=pickup_longitude, y=pickup_latitude)) +
+    geom_point(alpha=0.01, size=0.05) +
+    labs(title="Pickups") + 
+    xlim(-74.1,-73.75) + ylim(40.5, 40.9),
+  ggplot(green_samp, aes(x=dropoff_longitude, y=dropoff_latitude)) +
+    geom_point(alpha=0.01, size=0.05) +
+    labs(title="Dropoffs") +
+    xlim(-74.1,-73.75) + ylim(40.5, 40.9),
+  ncol=2
+)
+```
+
+### Beyond dplyr / sparkr api
+
+```{r}
+library(lubridate)
+
+df = data.frame(dt = "06-01-2016 02:46:38.0", stringsAsFactors = FALSE)
+df_spark = copy_to(sc, df, "df")
+
+df_spark %>%
+  mutate(
+    hour = as.integer(regexp_extract(dt, "[0-9]{2}-[0-9]{2}-[0-9]{4} ([0-9]{1,2}):", 1))
+  ) %>%
+  sql_render()
+
+
+green_time = green %>%
+  select(fare_amount, trip_distance, pickup_datetime, dropoff_datetime) %>%
+  mutate(
+    hour = hour(pickup_datetime),
+    wday = date_format(pickup_datetime, "EEE"),
+    trip_time = (unix_timestamp(dropoff_datetime) - unix_timestamp(pickup_datetime)) / 60
+  ) 
+
+green_time_local = green_time %>%
+  sample_n(1e5) %>%
+  collect()
+```
+
+```{r}
+green_time_local %>%
+  filter(trip_distance > 1, fare_amount > 1) %>%
+  ggplot(aes(x=trip_distance, y=fare_amount)) +
+    geom_point(alpha=0.1, size=0.5) +
+    geom_smooth()
+
+green_time_local %>%
+  filter(trip_time > 1, fare_amount > 1) %>%
+  ggplot(aes(x=trip_time, y=fare_amount)) +
+    geom_point(alpha=0.1, size=0.5) +
+    geom_smooth()
+```
+
+
+### Fitting Models
+
+```{r}
+
+m = ml_linear_regression(green_time, fare_amount ~ trip_distance)
+
+```
+
+
+## SQL
+
+```{r error=TRUE}
+library(DBI)
+
+green_time %>% sdf_register("green_time_spark")
+
+dbGetQuery(sc, "SELECT * FROM green LIMIT 10")
+
+dbGetQuery(sc, "SELECT * FROM green_time LIMIT 10")
+
+dbGetQuery(sc, "SELECT * FROM green_time_spark LIMIT 10")
+
+dbGetQuery(sc, "SELECT (tip_amount/fare_amount) AS tip_perc, * FROM green LIMIT 10")
+```
+
